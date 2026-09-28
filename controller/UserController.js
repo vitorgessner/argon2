@@ -17,16 +17,21 @@ export class UserController {
 
     if (action === "register") {
       const data = await this.userView.showUserInterface();
+      if (this.#userWannaLeave(data.username)) {
+        return await this.#showInterface();
+      }
       await this.#register(data.username, data.password);
     }
 
     if (action === "login") {
       const data = await this.userView.showUserInterface();
+      if (this.#userWannaLeave(data.username)) {
+        return await this.#showInterface();
+      }
       await this.#login(data.username, data.password);
     }
 
-    const newAction = await this.userView.showInterface();
-    await this.setContext(newAction);
+    await this.#showInterface();
   };
 
   #register = async (username, password) => {
@@ -35,7 +40,7 @@ export class UserController {
       await userModel.saveUser(username, password);
     } catch (err) {
       console.error(err.message);
-      await this.setContext("register");
+      await this.#showInterface("register");
     }
   };
 
@@ -55,7 +60,7 @@ export class UserController {
     } catch (err) {
       this.loginAttempts++;
       console.error(err.message);
-      await this.setContext("login");
+      await this.#showInterface('login');
     }
   };
 
@@ -68,7 +73,15 @@ export class UserController {
     throw new Error("To many attempts, try again later");
   };
 
-  #passedRateLimit = () => {
-    return Date.now() - this.lastLoginAttempt < this.loginRateLimit;
-  };
+  #passedRateLimit = () => Date.now() - this.lastLoginAttempt < this.loginRateLimit;
+
+  #userWannaLeave = (username) => username === "exit"
+
+  #showInterface = async (context = null) => {
+    if (context) {
+        return await this.setContext(context);
+    }
+    const newAction = await this.userView.showInterface();
+    await this.setContext(newAction);
+  }
 }
